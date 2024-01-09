@@ -1,0 +1,84 @@
+@import url('https://fonts.googleapis.com/css2?family=Sigmar&display=swap');
+
+
+.navbar {
+    z-index: 2 !important;
+    background-color: #A27B5C !important;
+    opacity: 0.9;
+    top: 0px;
+
+}
+
+.navbar a {
+    color: #2e1b09 !important;
+    transition: 0.5s;
+    font-weight: bold;
+}
+
+#bar {
+    color: #2e1b09 !important;
+    transition: 0.5s;
+    font-weight: bold;
+}
+
+.navbar a:hover {
+    color: #ffffff !important;
+}
+
+
+.content {
+    position: absolute;
+    top: 150%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: black;
+    z-index: 2;
+    font-family: 'Sigmar', cursive;
+    font-size: 60px;
+    text-align: center;
+    letter-spacing: 5px;
+}
+
+.pad {
+    margin-left: 70%;
+    margin-top: -15px;
+}
+
+body {
+    background: #000000;
+}
+
+
+.cloud-text {
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-image: url(https://hips.hearstapps.com/hmg-prod/images/new-years-movies-index-1640368473.jpg);
+    background-size: auto;
+    text-transform: uppercase;
+    background-attachment: unset;
+    background-position: 0%;
+    width: 80%;
+    margin-top: 220px;
+    margin-left: 150px;
+    font-size: 170px;
+    animation: clouds-moving infinite 220s;
+    animation-fill-mode: forwards;
+    animation-play-state: running;
+    animation-timing-function: linear;
+    text-align: center;
+}
+
+@keyframes clouds-moving {
+    0% {
+        background-position: 0%;
+    }
+
+    50% {
+        background-position: 100%;
+    }
+
+    100% {
+        background-position: 0%;
+    }
+}

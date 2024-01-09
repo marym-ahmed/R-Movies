@@ -1,0 +1,146 @@
+<div class="detailsMovie ">
+                        <div>
+                            <span>Movie Name</span>
+                            {{ $movie->name }}
+                        </div>
+
+
+                        <div>
+                            <span>Movie Description</span>
+                            {{ $movie->descrption}}
+                        </div>
+
+
+
+
+                        <div>
+                            @php
+                            $category = App\Models\category::find ($movie->category_id);
+                            @endphp
+                            <span>Category</span>
+                            {{$category->category}}
+                        </div>
+
+
+
+
+                        <div>
+                            @php
+                            $users = App\Models\User::find ($movie->users_id );
+                            @endphp
+                            <span>user Name</span>
+                            {{$users->name}}
+                        </div>
+
+
+
+
+
+
+
+                        @if(Auth::user()->role == 0)
+                        <div>
+                            @php
+                            $like_count=0;
+                            $dislike_count=0;
+                            $like_satatus = "btn-secondary";
+                            $dislike_satatus = "btn-secondary";
+                            @endphp
+
+                            @foreach ($movie->likes as $like)
+                            @php
+                            {if ($like->like == 1)
+                            $like_count++;
+                            }
+
+                            {if ($like->like == 0)
+                            $dislike_count++;
+
+                            }
+                            if (Auth::check())
+                            {
+
+                            if($like->like == 1 && $like->user_id == Auth::user()->id)
+                            {
+                            $like_satatus = "colorLike";
+
+
+                            }
+                            if($like->like == 0 && $like->user_id == Auth::user()->id)
+                            {
+                            $dislike_satatus = "colorDisLike";
+                            }
+
+                            }
+                            @endphp
+                            @endforeach
+                            @php
+                            $report_satatus = "btn-secondary";
+                            $report_count=0;
+                            @endphp
+
+                            @foreach ($movie->report as $report)
+                            @php
+                            {if ($report->report == 1)
+                            $report_count++;
+                            }
+
+                            if (Auth::check())
+                            {
+
+                            if($report->report == 1 && $report->user_id == Auth::user()->id)
+                            {
+                            $report_satatus = "colorReport";
+
+
+                            }
+                            if($report->report == 0 && $report->user_id == Auth::user()->id)
+                            {
+                            $report_satatus = "defaultColor";
+                            $report_satatus = "colorReport";
+                            }
+
+                            }
+                            @endphp
+                            @endforeach
+                            <div data-movieid="{{$movie->id}}_l" data-like="{{$like_satatus}}" class=" like  {{$like_satatus}}"><i class="fa-solid fa-thumbs-up likeBtn"></i>
+                                <span class="glyphicon glyphicon-thumbs-up "></span><b><span class="like_count"> {{$like_count}}</span></b>
+                            </div>
+                            <div data-movieid="{{$movie->id}}_d" class="  dislike  {{$dislike_satatus}}"><i class="fa-solid fa-thumbs-down disLikeBtn"></i>
+                                <span class="glyphicon glyphicon-thumbs-up "></span><b><span class="dislike_count">{{$dislike_count}}</span></b>
+                            </div>
+                            <div data-movieid="{{$movie->id}}_r" data-report="{{$report_satatus}}" class=" report  {{$report_satatus}}"><i class="fa-solid fa-flag"></i>
+                                <span class="glyphicon glyphicon-thumbs-up "></span><b> <span class="report_count">{{$report_count}}</span></b>
+                            </div>
+                            <form>
+                                @csrf
+                                <a href="{{ route('movie.show',$movie->id) }}"><i class="fa-solid fa-eye"></i></a>
+                            </form>
+                            @if (Auth::user()->role== 1)
+                            <form action="{{ route('movie.destroy',$movie->id) }}" method="Post">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-danger">Delete</button>
+                            </form>
+                            @endif
+
+                        </div>
+
+
+
+
+
+
+
+
+
+                        @endif
+</div>
+ @if ($message = Session::get('success'))
+    <div class="alert alert-success">
+        <p>{{ $message }}</p>
+    </div>
+    @endif
+@extends('layouts.app')
+@section('content')
+@endsection

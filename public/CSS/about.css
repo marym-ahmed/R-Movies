@@ -1,0 +1,221 @@
+dropdown-menuu {
+    left: -120px !important;
+    background-color: #090909;
+    color: white;
+
+}
+
+.dropdown-menuu:hover {
+    background-color: #000000;
+}
+
+
+.navbar-brand {
+    font-size: larger;
+    color: #2e1b09;
+    font-size: larger;
+    font-weight: bold;
+    font-family: cursive;
+}
+
+.navbar-brand:hover {
+    font-size: larger;
+    color: #2e1b09;
+    font-size: larger;
+    font-weight: bold;
+    font-family: cursive;
+}
+
+.nav-item {
+    font-weight: bold;
+    font-family: cursive;
+    color: white;
+    padding: 0px;
+    border-radius: 10px;
+    font-size: 20px;
+    margin: 0 .25px;
+    text-decoration: none;
+}
+
+.nav-item :hover {
+    border-radius: 200px;
+    color: #DCD7C9;
+    background-color: #2C3639;
+}
+
+body {
+    /* position: relative; */
+    background-color: #000000
+}
+
+.dropdown-menu {
+    background-color: #000000;
+    color: white;
+}
+
+.dropdown-menu:hover {
+    background-color: #000000;
+    color: white;
+    border-radius: 10px;
+}
+
+.dropdown-item {
+    color: white;
+}
+
+.dropdown-item:hover {
+    color: white;
+    background-color: #000000;
+}
+
+#star {
+    color: #2e1b09;
+    size: 70px;
+    margin-right: 5px;
+}
+
+
+
+#link {
+    text-decoration: none;
+    color: #b59983;
+    margin-left: 30px;
+    font-weight: bold;
+    font-family: 'Times New Roman', Times, serif;
+}
+
+#link:hover {
+    text-decoration: none;
+    color: #db8c50;
+    margin-left: 30px;
+    font-weight: bold;
+    font-family: 'Times New Roman', Times, serif;
+}
+
+.copy {
+    margin-top: 30px;
+    display: block;
+    margin-bottom: 30px;
+    color: #fde9ff;
+}
+
+.sweet-title,
+#foot {
+    order: 2;
+    color: #fde9ff;
+    margin-bottom: 50px;
+    margin-top: 50px;
+    font-weight: 900;
+    text-transform: uppercase;
+    font-size: clamp(1rem, 5vw, 3rem);
+    line-height: 0.75em;
+    text-align: center;
+    text-shadow: 3px 1px 1px #805c3f, 2px 2px 1px #A27B5C, 4px 2px 1px #805c3f,
+        3px 3px 1px #A27B5C, 5px 3px 1px #805c3f, 4px 4px 1px #A27B5C,
+        6px 4px 1px #805c3f, 5px 5px 1px #A27B5C, 7px 5px 1px #805c3f,
+        6px 6px 1px #A27B5C, 8px 6px 1px #805c3f, 7px 7px 1px #A27B5C,
+        9px 7px 1px #805c3f;
+}
+
+
+* {
+    box-sizing: border-box;
+}
+
+:root {
+    --gold: #ffb338;
+    --light-shadow: #77571d;
+    --dark-shadow: #3e2904;
+}
+
+.wrapper {
+    display: grid;
+    grid-template-areas: 'overlap';
+    text-transform: uppercase;
+    height: 100vh;
+    margin-left: 35%;
+    margin-top: 30px;
+    margin-bottom: -500px;
+
+}
+
+.wrapper>div {
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: #000000;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 900;
+    font-size: clamp(1em, 7vw, 5rem);
+    grid-area: overlap;
+    letter-spacing: 1px;
+    -webkit-text-stroke: 4px transparent;
+}
+
+div.bg {
+    background-image: repeating-linear-gradient(105deg,
+            var(--gold) 0%,
+            var(--dark-shadow) 5%,
+            var(--gold) 12%);
+    color: transparent;
+    filter: drop-shadow(5px 15px 15px black);
+    transform: scaleY(1.05);
+    transform-origin: top;
+}
+
+div.fg {
+    background-image: repeating-linear-gradient(5deg,
+            var(--gold) 0%,
+            var(--light-shadow) 23%,
+            var(--gold) 31%);
+    color: #000000;
+    transform: scale(1);
+}
+
+.container {
+    font-size: medium;
+    text-align: center;
+    color: #DCD7C9;
+    margin-top: 0%;
+    margin-bottom: 10%;
+}
+
+#link {
+    text-decoration: none;
+    color: #b59983;
+    margin-left: 30px;
+    font-weight: bold;
+    font-family: 'Times New Roman', Times, serif;
+}
+
+#link:hover {
+    text-decoration: none;
+    color: #db8c50;
+    margin-left: 30px;
+    font-weight: bold;
+    font-family: 'Times New Roman', Times, serif;
+}
+
+.copy {
+    margin-top: 30px;
+    display: block;
+    margin-bottom: 30px;
+    color: #fde9ff;
+}
+
+.sweet-title,
+#foot {
+    order: 2;
+    color: #fde9ff;
+    margin-bottom: 50px;
+    margin-top: 50px;
+    font-weight: 900;
+    text-transform: uppercase;
+    font-size: clamp(1rem, 5vw, 3rem);
+    line-height: 0.75em;
+    text-align: center;
+    text-shadow: 3px 1px 1px #805c3f, 2px 2px 1px #A27B5C, 4px 2px 1px #805c3f,
+        3px 3px 1px #A27B5C, 5px 3px 1px #805c3f, 4px 4px 1px #A27B5C,
+        6px 4px 1px #805c3f, 5px 5px 1px #A27B5C, 7px 5px 1px #805c3f,
+        6px 6px 1px #A27B5C, 8px 6px 1px #805c3f, 7px 7px 1px #A27B5C,
+        9px 7px 1px #805c3f;
+}
