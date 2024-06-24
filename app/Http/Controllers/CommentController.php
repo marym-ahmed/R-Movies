@@ -1,257 +1,102 @@
 <?php
 
 namespace App\Http\Controllers;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Auth;
+
 use Illuminate\Http\Request;
-use App\Models\comment;
-use App\Models\movie;
-use App\Models\User;
-use App\Models\Pan;
-use App\Models\review;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
+use App\Models\Movie;
+use App\Repositories\CommentRepository;
+use App\Traits\Actionable;
+use App\Http\Requests\Comment\StoreCommentRequest;
+
 class CommentController extends Controller
 {
+    use Actionable;
 
+    protected $commentRepo;
 
-    
-    public function store(Request $request, $id){
+    public function __construct(CommentRepository $commentRepo)
+    {
+        $this->commentRepo = $commentRepo;
+    }
 
-        $request->validate([
-            'comment'=> 'required|min:4',
+    public function store(StoreCommentRequest $request, $id)
+    {
+        $data = [
+            'user_id' => $request->user()->id,
+            'movie_id' => $id,
+            'comment' => $request->comment,
+        ];
+
+        $this->commentRepo->create($data);
+
+        // Call the external API for ranking
+        $response = Http::post('http://127.0.0.1:5000/ranking', [
+            'movie_id' => $id,
+            'user_id' => $request->user()->id,
+            'comment' => $request->comment,
         ]);
 
-        $data = new comment;
-        $data->user_id = $request->user()->id;
-        $user_id=$data->user_id;
-
-        $data->movie_id = $id;
-        $movie_id=$data->movie_id;
-
-        $data->comment = $request->comment;
-        $allcomments=$data->comment;
-
-        $response = Http::post('http://127.0.0.1:5000/ranking?movie_id='.$movie_id.'&user_id='.$user_id.'&comment='.$allcomments);
-
-
-        $Positive = 0 ;
-       $x = 0;
-        $y =0 ;
-     $Negative = 0 ;
-    $allComment = 0;
-   $rank= 0;
-       $comments= comment::where('movie_id' ,'=',  $data->movie_id )->get();
-       foreach ($comments as $comment){
-
-           $allComment += 1  ;
-        if ($comment->value > 0){
-           $Positive += $comment->value ;
-
-        }
-
-        elseif ($comment->value < 0){
-           $Negative += $comment->value ;
-        }
-
-          }
-
-          if(  $allComment > 0){
-        $x =  $Positive / $allComment;
-        $y = $Negative / $allComment;
-        $rank = $x + $y;
-       }
-    $movies =movie::where('id' , $data->movie_id)->first();
-    $movies->ranking = $rank;
-    $movies->save();
+        $this->updateMovieRanking($id);
 
         return redirect()->back();
-
     }
-    // public function remove($id)
-    // {
-    //     $comment = comment::find($id);
-    //     $comment->delete();
-    //     return redirect()->back();
-    // }
+
     public function remove($id)
     {
-        $comment = comment::find($id);
-        $comment->delete();
-        $Positive = 0 ;
-       $x = 0;
-        $y =0 ;
-     $Negative = 0 ;
-    $allComment = 0;
-   $rank= 0;
-       $comments= comment::where('movie_id' ,'=',  $comment->movie_id )->get();
-       foreach ($comments as $comment){
+        $comment = $this->commentRepo->find($id);
+        $movie_id = $comment->movie_id;
+        $this->commentRepo->delete($id);
 
-           $allComment += 1  ;
-        if ($comment->value > 0){
-           $Positive += $comment->value ;
+        $this->updateMovieRanking($movie_id);
 
-        }
+        return redirect()->back();
+    }
 
-        elseif ($comment->value < 0){
-           $Negative += $comment->value ;
-        }
-
-          }
-
-          if(  $allComment > 0){
-        $x =  $Positive / $allComment;
-        $y = $Negative / $allComment;
-        $rank = $x + $y;
-       }
-    $movies =movie::where('id' , $comment->movie_id)->first();
-    $movies->ranking = $rank;
-    $movies->save();
-
-        return redirect()->back();}
-
-
-    public function like(Request $request)
+    public function likeComment(Request $request)
     {
-        $comment_id = $request->comment_id;
-        $like_s = $request->like_s;
-        $change_like = 0;
-        $like = DB::table('reviews')
-        ->where('comment_id',$comment_id)
-        ->where('user_id', Auth::user()->id)
-        ->first();
-        if(!$like){
-
-            $new_like = new review;
-
-            $new_like->comment_id = $comment_id;
-            $new_like->user_id = Auth::user()->id;
-             $new_like->like = 1;
-            $new_like->save();
-            $is_like = 1;
-
-        }
-        elseif($like->like == 1){
-         DB::table('reviews')->
-         where('comment_id',$comment_id)
-         ->where('user_id', Auth::user()->id)
-         ->delete();
-         $is_like = 0;
-        }
-        elseif($like->like == 0)
-        {
-            DB::table('reviews')->
-            where('comment_id',$comment_id)
-            ->where('user_id', Auth::user()->id)
-            ->update(['like' => 1]);
-            $is_like = 1;
-            $change_like = 1;
-
-}
-$response = array(
-    'is_like' =>  $is_like,
-    'change_like' => $change_like,
-);
-return response()->json($response , 200);
-}
-
-///disLike
-
-public function dislike(Request $request)
-{
-    $comment_id = $request->comment_id;
-    $like_s = $request->like_s;
-    $change_dislike= 0;
-    $dislike = DB::table('reviews')
-    ->where('comment_id',$comment_id)
-    ->where('user_id', Auth::user()->id)
-    ->first();
-    if(!$dislike){
-
-        $new_like = new review;
-        $new_like->comment_id = $comment_id;
-        $new_like->user_id = Auth::user()->id;
-         $new_like->like = 0;
-        $new_like->save();
-        $is_dislike= 1;
-
+        $result = $this->like($request->comment_id);
+        return response()->json(['success' => $result], 200);
     }
-    elseif($dislike->like == 0){
-     DB::table('reviews')->
-     where('comment_id',$comment_id)
-     ->where('user_id', Auth::user()->id)
-     ->delete();
-     $is_dislike = 0;
-    }
-    elseif($dislike->like == 1)
+
+    public function dislikeComment(Request $request)
     {
-        DB::table('reviews')->
-        where('comment_id',$comment_id)
-        ->where('user_id', Auth::user()->id)
-        ->update(['like' => 0]);
-        $is_dislike = 1;
-        $change_dislike= 1;
-}
-$response = array(
-'is_dislike' =>  $is_dislike,
-'change_dislike' => $change_dislike,
-
-);
-return response()->json($response , 200);
-}
-
-
-
-
-public function report(Request $request)
-{
-    $comment_id = $request->comment_id;
-    $like_s = $request->like_s;
-    $report = DB::table('pans')
-    ->where('comment_id',$comment_id)
-    ->where('user_id', Auth::user()->id)
-    ->first();
-    if(!$report){
-
-        $new_report = new Pan;
-
-        $new_report->comment_id = $comment_id;
-        $new_report->user_id = Auth::user()->id;
-         $new_report->report = 1;
-        $new_report->save();
-        $is_report = 1;
-
+        $result = $this->dislike($request->comment_id);
+        return response()->json(['success' => $result], 200);
     }
-    elseif($report->report == 1){
-     DB::table('pans')->
-     where('comment_id',$comment_id)
-     ->where('user_id', Auth::user()->id)
-     ->delete();
-     $is_report = 0;
-    }
-    elseif($report->report == 0)
+
+    public function reportComment(Request $request)
     {
-        DB::table('pans')
-        -> where('comment_id',$comment_id)
-        ->where('user_id', Auth::user()->id)
-        ->update(['report' => 1]);
-        $is_report = 1;
+        $result = $this->report($request->comment_id);
+        return response()->json(['success' => $result], 200);
+    }
 
-}
-$response = array(
-'is_report' =>  $is_report,
-);
-return response()->json($response , 200);
-}
-public function reportedCommentes()
-{
-    $comment = comment::get();
-        return view('comments.reportedCommentes', compact('comment'));
+    protected function updateMovieRanking($movie_id)
+    {
+        $comments = $this->commentRepo->getCommentsByMovieId($movie_id);
+        $positive = $comments->where('value', '>', 0)->sum('value');
+        $negative = $comments->where('value', '<', 0)->sum('value');
+        $allComment = $comments->count();
 
-}
+        $rank = 0;
+        if ($allComment > 0) {
+            $rank = ($positive / $allComment) + ($negative / $allComment);
+        }
 
-public function destroy($id)
-    { 
-        $report = DB::table('pans')->where('comment_id', '=', $id)->delete();    
-        return redirect()->back();}
+        $movie = Movie::find($movie_id);
+        $movie->ranking = $rank;
+        $movie->save();
+    }
 
+    public function reportedComments()
+    {
+        $comments = $this->commentRepo->all();
+        return view('comments.reportedComments', compact('comments'));
+    }
+
+    public function destroy($id)
+    {
+        DB::table('pans')->where('comment_id', '=', $id)->delete();
+        return redirect()->back();
+    }
 }

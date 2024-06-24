@@ -3,10 +3,9 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Http\Requests\User\LoginRequest;
-use App\Http\Requests\User\RegistrationRequest;
-use App\Http\Requests\User\UpdateUserRequest;
-use App\Http\Requests\Search;
+use App\Http\Requests\LoginRequest;
+use App\Http\Requests\RegistrationRequest;
+use App\Http\Requests\UpdateUserRequest;
 use App\Repositories\UserRepository;
 use Illuminate\Support\Facades\Auth;
 
@@ -29,7 +28,7 @@ class UserAuthController extends Controller
         return view('welcome');
     }
 
-    public function search(search $request)
+    public function search(Request $request)
     {
         $search = $request->input('search');
         $users = $this->userRepository->searchByName($search);

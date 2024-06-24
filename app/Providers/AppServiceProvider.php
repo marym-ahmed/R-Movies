@@ -13,7 +13,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        //
+        $this->app->singleton(CategoryRepository::class, function ($app) {
+            return new CategoryRepository(new Category);
+        });
+        $this->app->singleton(CommentRepository::class, function ($app) {
+            return new CommentRepository(new Comment);
+        });
     }
 
     /**

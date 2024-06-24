@@ -3,123 +3,68 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\category;
-use Illuminate\Support\Facades\Auth;
+use App\Http\Requests\Category\CategoryRequest;
+use App\Repositories\CategoryRepository;
 
 class CategoryController extends Controller
 {
+    protected $categoryRepo;
 
-    /**
-    * Display a listing of the resource.
-    *
-    * @return \Illuminate\Http\Response
-    */
+    public function __construct(CategoryRepository $categoryRepo)
+    {
+        $this->categoryRepo = $categoryRepo;
+    }
+
     public function index()
     {
-        $categories = category::get();
+        $categories = $this->categoryRepo->all();
         return view('categories.index', compact('categories'));
     }
 
-
-    /**
-    * Show the form for creating a new resource.
-    *
-    * @return \Illuminate\Http\Response
-    */
     public function create()
     {
-
-        return view('Categories.create');
+        return view('categories.create');
     }
 
-    /**
-    * Store a newly created resource in storage.
-    *
-    * @param  \Illuminate\Http\Request  $request
-    * @return \Illuminate\Http\Response
-    */
-    public function store(Request $request)
+    public function store(CategoryRequest $request) // استخدام CategoryRequest هنا
     {
-        $request->validate([
-            'category' => 'required'
+        $this->categoryRepo->create($request->validated());
 
-        ]);
-
-        category::create($request->post());
-
-        return redirect()->route('categories.index')->with('success','category has been created successfully.');
+        return redirect()->route('categories.index')->with('success', 'Category has been created successfully.');
     }
 
-    /**
-    * Display the specified resource.
-    *
-    * @param  \App\category  $category
-    * @return \Illuminate\Http\Response
-    */
-    public function show($category)
+    public function show($id)
     {
-        $categorys = category::find($category);
-        return view('categories.show', [
-            'categorys' => $categorys,
-        ]);
+        $category = $this->categoryRepo->find($id);
+        return view('categories.show', compact('category'));
     }
-    /**
-    * Show the form for editing the specified resource.
-    *
-    * @param  \App\category  $category
-    * @return \Illuminate\Http\Response
-    */
 
-
-
-
-
-
-    public function edit(category $category)
+    public function edit($id)
     {
-        return view('Categories.edit',compact('category'));
+        $category = $this->categoryRepo->find($id);
+        return view('categories.edit', compact('category'));
     }
 
-    /**
-    * Update the specified resource in storage.
-    *
-    * @param  \Illuminate\Http\Request  $request
-    * @param  \App\category  $category
-    * @return \Illuminate\Http\Response
-    */
-    public function update(Request $request, category $category)
+    public function update(CategoryRequest $request, $id) // استخدام CategoryRequest هنا
     {
-        $request->validate([
-            'category' => 'required'
+        $category = $this->categoryRepo->find($id);
+        $this->categoryRepo->update($category, $request->validated());
 
-        ]);
-
-        $category->fill($request->post())->save();
-
-        return redirect()->route('categories.index')->with('success','category Has Been updated successfully');
+        return redirect()->route('categories.index')->with('success', 'Category has been updated successfully.');
     }
 
-    /**
-    * Remove the specified resource from storage.
-    *
-    * @param  \App\category  $category
-    * @return \Illuminate\Http\Response
-    */
-    public function destroy(category $category)
+    public function destroy($id)
     {
-        $category->delete();
-        return redirect()->route('categories.index')->with('success','category has been deleted successfully');
+        $category = $this->categoryRepo->find($id);
+        $this->categoryRepo->delete($category);
+
+        return redirect()->route('categories.index')->with('success', 'Category has been deleted successfully.');
     }
 
-    public function search(Request $request){
+    public function search(Request $request)
+    {
         $search = $request->input('search');
-        $categories = category::query()->where('category', 'LIKE', "%{$search}%")->get();
+        $categories = $this->categoryRepo->search($search);
         return view('categories.search', compact('categories'));
     }
-
-
-    
-    
 }
-
-

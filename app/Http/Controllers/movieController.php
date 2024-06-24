@@ -2,309 +2,149 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\category;
-use App\Models\movie;
-use App\Models\like;
-use App\Models\report;
-
-
-use Illuminate\Support\Facades\DB;
+use App\Models\Category;
+use App\Models\Movie;
+use App\Http\Requests\Movie\StoreMovieRequest;
+use App\Http\Requests\Search;
+use App\Http\Requests\Movie\ActionMovieRequest;
+use App\Repositories\MovieRepository;
+use App\Traits\Likeable;
+use App\Traits\Reportable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
 
-class movieController extends Controller
+class MovieController extends Controller
 {
+    use Likeable, Reportable;
 
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
+    protected $movieRepository;
+
+    public function __construct(MovieRepository $movieRepository)
+    {
+        $this->movieRepository = $movieRepository;
+    }
+
     public function reportedMovies()
     {
-
-        $movie = movie::get();
-        return view('movies.reportedMovies', compact('movie'));
+        $movies = $this->movieRepository->getAll();
+        return view('movies.reportedMovies', compact('movies'));
     }
 
     public function index()
     {
-        $movies = movie::orderBy('ranking', 'desc')->limit(50)->paginate(10);
-        // return view('movies.index', compact('movies'))
-        //     ->with('category', category::all());
-        return view('movies.index', ['movies' => $movies])->with('category', category::all());
+        $movies = $this->movieRepository->getPaginated(50, 10);
+        return view('movies.index', compact('movies'))->with('category', Category::all());
     }
-    public function MovieType($MovieType)
+
+    public function movieType($movieType)
     {
-        $category = category::where('id', '=', $MovieType)->first();
-        // $movies = movie::where('category_id', $category->id)->paginate(8);
-        // $movies = $movies->orderBy('ranking', 'desc')->limit(50)->get();
-         $movies = movie::where('category_id','=' , $category->id )->orderBy('ranking', 'desc')->limit(10)->get();
-        return view('categories.show', compact('movies'))->with('category', category::all());
+        $category = Category::find($movieType);
+        $movies = $this->movieRepository->getByCategory($category->id, 10);
+        return view('categories.show', compact('movies'))->with('category', Category::all());
     }
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
+
     public function create()
     {
-        return view('movies.create')->with('category', category::all());
+        return view('movies.create')->with('category', Category::all());
     }
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
-    public function store(Request $request)
+
+    public function store(StoreMovieRequest $request)
     {
-        $request->validate([
-            'name' => 'required',
-            'descrption' => 'required',
-            'img_url' => 'required|mimes:jpg,png,jpeg,gif,svg|max:2048',
-            'category_id' => 'required',
-            'video' => 'required|file|mimetypes:video/mp4',
+        $validated = $request->validated();
 
-        ]);
-
-        $newImageName = time() . '-' . $request->name . '.' . $request->img_url->extension();
+        $newImageName = time() . '-' . $validated['name'] . '.' . $request->img_url->extension();
         $request->img_url->move(public_path('images'), $newImageName);
 
         $myvideo = $request->video->getClientOriginalName();
         $request->video->move(public_path('videos'), $myvideo);
 
-        movie::create([
-            'name' => $request->name,
+        $attributes = [
+            'name' => $validated['name'],
             'img_url' => $newImageName,
             'video' => $myvideo,
-            'descrption' => $request->descrption,
-            'category_id' => $request->category_id,
+            'descrption' => $validated['descrption'],
+            'category_id' => $validated['category_id'],
             'users_id' => Auth::user()->id
-        ]);
+        ];
 
+        $this->movieRepository->create($attributes);
 
-        return redirect()->route('movie.index')->with('success', 'movie has been created successfully.');}
-    /**
-     * Display the specified resource.
-     *
-     * @param  \App\movie  $movie
-     * @return \Illuminate\Http\Response
-     */
+        return redirect()->route('movie.index')->with('success', 'Movie has been created successfully.');
+    }
 
-    // public function show($movie)
-    // {
-    //     $movies = movie::find($movie);
-    //     return view('movies.show', [
-    //         'movies' => $movies,
-    //     ]);
-    // }
     public function show($movie)
     {
-        $movies = movie::find($movie);
-        return view('movies.show', [
-            'movies' => $movies,
-        ]);
+        $movie = $this->movieRepository->getById($movie);
+        return view('movies.show', compact('movie'));
     }
 
-
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  \App\movie  $movie
-     * @return \Illuminate\Http\Response
-     */
-
-
-
-
-
-
-
-
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\movie  $movie
-     * @return \Illuminate\Http\Response
-     */
-
-
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  \App\movie  $movie
-     * @return \Illuminate\Http\Response
-     */
-    public function destroy(movie $movie)
+    public function destroy(Movie $movie)
     {
-        $movie->delete();
-        return redirect()->route('movie.index')->with('success', 'movie has been deleted successfully');
+        $this->movieRepository->delete($movie->id);
+        return redirect()->route('movie.index')->with('success', 'Movie has been deleted successfully');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  \App\movie  $movie
-     * @return \Illuminate\Http\Response
-     */
-
-
-    public function search(Request $request)
+    public function search( $request)
     {
-        $search = $request->input('search');
-        $movies = movie::query()->where('name', 'LIKE', "%{$search}%")->get();
+        $validated = $request->validated();
+        $search = $validated['search'];
+        $movies = $this->movieRepository->searchByName($search);
         return view('movies.search', compact('movies'));
     }
 
-
-    public function like(Request $request)
-    {
-        $movie_id = $request->movie_id;
-        $like_s = $request->like_s;
-        $change_like = 0;
-        $like = DB::table('likes')
-            ->where('movie_id', $movie_id)
-            ->where('user_id', Auth::user()->id)
-            ->first();
-        if (!$like) {
-
-            $new_like = new like;
-
-            $new_like->movie_id = $movie_id;
-            $new_like->user_id = Auth::user()->id;
-            $new_like->like = 1;
-            $new_like->save();
-            $is_like = 1;
-        } elseif ($like->like == 1) {
-            DB::table('likes')->where('movie_id', $movie_id)
-                ->where('user_id', Auth::user()->id)
-                ->delete();
-            $is_like = 0;
-        } elseif ($like->like == 0) {
-            DB::table('likes')->where('movie_id', $movie_id)
-                ->where('user_id', Auth::user()->id)
-                ->update(['like' => 1]);
-            $is_like = 1;
-            $change_like = 1;
-        }
-        $response = array(
-            'is_like' =>  $is_like,
-            'change_like' => $change_like,
-        );
-        return response()->json($response, 200);
-    }
-
-
-
-    ////////////////////
     public function userMovie()
     {
-        $id =  Auth::user()->id;
-
-        $movies = movie::where('users_id', '=', $id)->get();
+        $movies = $this->movieRepository->getByUserId(Auth::user()->id);
         return view('movies.userMovie', compact('movies'));
     }
-    public function dislike(Request $request)
+
+    public function like( ActionMovieRequest $request)
     {
         $movie_id = $request->movie_id;
-        $like_s = $request->like_s;
-        $change_dislike = 0;
-        $dislike = DB::table('likes')
-            ->where('movie_id', $movie_id)
-            ->where('user_id', Auth::user()->id)
-            ->first();
-        if (!$dislike) {
+        $is_like = $this->like($movie_id);
 
-            $new_like = new like;
-            $new_like->movie_id = $movie_id;
-            $new_like->user_id = Auth::user()->id;
-            $new_like->like = 0;
-            $new_like->save();
-            $is_dislike = 1;
-        } elseif ($dislike->like == 0) {
-            DB::table('likes')->where('movie_id', $movie_id)
-                ->where('user_id', Auth::user()->id)
-                ->delete();
-            $is_dislike = 0;
-        } elseif ($dislike->like == 1) {
-            DB::table('likes')->where('movie_id', $movie_id)
-                ->where('user_id', Auth::user()->id)
-                ->update(['like' => 0]);
-            $is_dislike = 1;
-            $change_dislike = 1;
-        }
-        $response = array(
-            'is_dislike' =>  $is_dislike,
-            'change_dislike' => $change_dislike,
-
-        );
-        return response()->json($response, 200);
+        return response()->json(['is_like' => $is_like], 200);
     }
 
-
-
-
-    public function report(Request $request)
+    public function dislike(ActionMovieRequest $request)
     {
         $movie_id = $request->movie_id;
-        $like_s = $request->like_s;
-        $report = DB::table('reports')
-            ->where('movie_id', $movie_id)
-            ->where('user_id', Auth::user()->id)
-            ->first();
-        if (!$report) {
+        $is_dislike = $this->dislike($movie_id);
 
-            $new_report = new report;
-
-            $new_report->movie_id = $movie_id;
-            $new_report->user_id = Auth::user()->id;
-            $new_report->report = 1;
-            $new_report->save();
-            $is_report = 1;
-        } elseif ($report->report == 1) {
-            DB::table('reports')->where('movie_id', $movie_id)
-                ->where('user_id', Auth::user()->id)
-                ->delete();
-            $is_report = 0;
-        } elseif ($report->report == 0) {
-            DB::table('reports')
-                ->where('movie_id', $movie_id)
-                ->where('user_id', Auth::user()->id)
-                ->update(['report' => 1]);
-            $is_report = 1;
-        }
-        $response = array(
-            'is_report' =>  $is_report,
-        );
-        return response()->json($response, 200);
-    }
-    public function vsearch(Request $request)
-    {
-        $search = $request->input('search');
-        $movies = movie::query()->where('name', 'LIKE', "%{$search}%")->get();
-        return view('movies.vsearch', compact('movies'));}
-
-        public function profile($id)
-    {
-        $movies = DB::table('movies')->where('users_id', '=', $id)->get(); 
-        return view('auth.show', [
-            'movies' => $movies,
-        ]);
+        return response()->json(['is_dislike' => $is_dislike], 200);
     }
 
-    public function likemovies($id)
+    public function report(ActionMovieRequest $request)
     {
-         $likes = DB::table('likes')->where('user_id', '=', $id)->get(); 
-        return view('auth.likemovies', [
-            'likes' => $likes,
-        ]);}
- public function delete($id)
-    { 
-        $report = DB::table('reports')->where('movie_id', '=', $id)->delete();    
-        return redirect()->back();}
+        $movie_id = $request->movie_id;
+        $is_report = $this->report($movie_id);
+
+        return response()->json(['is_report' => $is_report], 200);
+    }
+
+    public function vsearch(Search $request)
+    {
+        $validated = $request->validated();
+        $search = $validated['search'];
+        $movies = $this->movieRepository->searchByName($search);
+        return view('movies.vsearch', compact('movies'));
+    }
+
+    public function profile($movie)
+    {
+        $movies = $this->movieRepository->getByUserId($movie);
+        return view('auth.show', compact('movies'));
+    }
+
+    public function likemovies($movie)
+    {
+        $likes = DB::table('likes')->where('user_id', $movie)->get();
+        return view('auth.likemovies', compact('likes'));
+    }
+
+    public function delete($movie)
+    {
+        DB::table('reports')->where('movie_id', $movie)->delete();
+        return redirect()->back();
+    }
 }
-
